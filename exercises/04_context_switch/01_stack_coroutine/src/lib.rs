@@ -13,7 +13,7 @@
 //! - Callee-saved: `sp`, `ra`, `s0`–`s11`. The `ret` instruction is `jalr zero, 0(ra)`.
 //! - First and second arguments: `a0` (old context), `a1` (new context).
 
-#![cfg(target_arch = "riscv64")]
+// #![cfg(target_arch = "riscv64")]
 
 /// Saved register state for one task (riscv64). Layout must match the offsets used in the asm below: for one task (riscv64). Layout must match the offsets used in the asm below:
 /// `sp` at 0, `ra` at 8, then `s0`–`s11` at 16, 24, … 104.
@@ -62,17 +62,25 @@ impl TaskContext {
     /// - Set `sp = stack_top` with 16-byte alignment (RISC-V ABI requires 16-byte aligned stack at function entry).
     /// - Leave `s0`–`s11` zero; they will be loaded on switch.
     pub fn init(&mut self, stack_top: usize, entry: usize) {
-        todo!("set ra = entry, sp = stack_top (16-byte aligned)")
+        // todo!("set ra = entry, sp = stack_top (16-byte aligned)")
+        self.ra = entry as u64;
+        self.sp = stack_top as u64;
+
     }
 }
 
+core::arch::global_asm!(include_str!("switch.S"));
+unsafe extern "C" {
+    fn _switch(old:*mut TaskContext,new:*const TaskContext);
+}
 /// Switch from `old` to `new` context: save current callee-saved regs into `old`, load from `new`, then `ret` (jumps to `new.ra`).
 ///
 /// In asm: store `sp`, `ra`, `s0`–`s11` to `[a0]` (old), load from `[a1]` (new), zero `a0`/`a1` so we do not leak pointers into the new context, then `ret`.
 ///
 /// Must be `#[unsafe(naked)]` to prevent the compiler from generating a prologue/epilogue.
 pub unsafe fn switch_context(old: &mut TaskContext, new: &TaskContext) {
-    todo!("save callee-saved regs to old, load from new, then ret; use #[unsafe(naked)] + naked_asm!, see module doc for riscv64 ABI and layout")
+    // todo!("save callee-saved regs to old, load from new, then ret; use #[unsafe(naked)] + naked_asm!, see module doc for riscv64 ABI and layout")
+    _switch(old,new);
 }
 
 const STACK_SIZE: usize = 1024 * 64;
@@ -80,7 +88,13 @@ const STACK_SIZE: usize = 1024 * 64;
 /// Allocate a stack for a coroutine. Returns `(buffer, stack_top)` where `stack_top` is the high address
 /// (stack grows down). The buffer must be kept alive for the lifetime of the context using this stack.
 pub fn alloc_stack() -> (Vec<u8>, usize) {
-    todo!("allocate stack buffer, return (buffer, stack_top) with stack_top 16-byte aligned")
+    // todo!("allocate stack buffer, return (buffer, stack_top) with stack_top 16-byte aligned")
+    let buffer = vec![0u8;STACK_SIZE];
+    
+    let base = buffer.as_ptr() as usize;
+    let mut stack_top = base + STACK_SIZE ;
+    stack_top = stack_top & !0xf;
+    (buffer,stack_top)
 }
 
 #[cfg(test)]

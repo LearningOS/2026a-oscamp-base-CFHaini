@@ -20,7 +20,24 @@ pub fn concurrent_counter(n_threads: usize, count_per_thread: usize) -> usize {
     // TODO: Spawn n_threads threads
     // TODO: In each thread, lock() and increment count_per_thread times
     // TODO: Join all threads, return final value
-    todo!()
+    // todo!()
+    let counter = Arc::new(Mutex::new(0usize));
+    let mut handles = Vec::new();
+    for i in 0..n_threads{
+        let copy_counter = Arc::clone(&counter);
+        handles.push(thread::spawn(move ||{
+            for _i in 0..count_per_thread{
+                let mut guard = copy_counter.lock().unwrap();
+                *guard +=1;
+                drop(guard);
+            }
+        }));
+    }
+    handles.into_iter().for_each(|handle|{
+        handle.join().unwrap()
+    });
+    let guard = counter.lock().unwrap();
+    *guard
 }
 
 /// Add elements to a shared vector concurrently using multiple threads.
@@ -32,7 +49,21 @@ pub fn concurrent_collect(n_threads: usize) -> Vec<usize> {
     // TODO: Create Arc<Mutex<Vec<usize>>>
     // TODO: Each thread pushes its own id
     // TODO: After joining all threads, sort the result and return
-    todo!()
+    // todo!()
+    let result = Arc::new(Mutex::new(Vec::<usize>::new()));
+    (0..n_threads).map(|i|{
+        let result_copy = result.clone();
+        thread::spawn(move ||{
+            let mut guard = result_copy.lock().unwrap();
+            guard.push(i);
+            drop(guard);
+        })
+    }).for_each(|handle|{
+        handle.join().unwrap()
+    });
+    let mut guard = result.lock().unwrap();
+    guard.sort();
+    guard.iter().map(|i|*i).collect()
 }
 
 #[cfg(test)]

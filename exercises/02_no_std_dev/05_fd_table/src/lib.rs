@@ -51,13 +51,19 @@ pub struct FdTable {
     // TODO: Design the internal structure
     // Hint: use Vec<Option<Arc<dyn File>>>
     //       the index is the fd number, None means the fd is closed or unallocated
+    fd:Vec<Option<Arc<dyn File>>>,
+    count:usize,
 }
 
 impl FdTable {
     /// Create an empty fd table
     pub fn new() -> Self {
         // TODO
-        todo!()
+        // todo!()
+        Self {
+            fd:Vec::new(),
+            count:0usize
+        }
     }
 
     /// Allocate a new fd, return the fd number.
@@ -65,25 +71,95 @@ impl FdTable {
     /// Prefers reusing the smallest closed fd number; if no free slot, appends to the end.
     pub fn alloc(&mut self, file: Arc<dyn File>) -> usize {
         // TODO
-        todo!()
+        // todo!()
+        if let Some((id,_)) = self.fd.iter().enumerate().find(|(_,item)|{
+            item.is_none()
+        }){
+            self.fd[id] = Some(file);
+            self.count +=1;
+            return id;
+        }
+        else{
+            self.fd.push(Some(file));
+            self.count +=1;
+            return self.fd.len()-1;
+        }
     }
 
     /// Get the file object for an fd. Returns None if the fd doesn't exist or is closed.
     pub fn get(&self, fd: usize) -> Option<Arc<dyn File>> {
         // TODO
-        todo!()
+        // todo!()
+        // if fd > self.fd.len() || self.fd[fd].is_none(){
+        //     return None;
+        // }else{
+        //     return self.fd[fd].clone();
+        // }
+        // if let Some((id,_)) = self.fd.iter().enumerate().find(|(id,item)|{
+        //     *id == fd && !item.is_none()
+        // })
+        // {
+        //     return self.fd[id].clone()
+        // }
+        // else{
+        //     return None;
+        // }
+        if let Some(value) = self.fd.iter().nth(fd){
+            if value.is_none(){
+                return None;
+            }
+            else{
+                return self.fd[fd].clone();
+            }
+        }
+        else{
+            return None;
+        }
     }
 
     /// Close an fd. Returns true on success, false if the fd doesn't exist or is already closed.
     pub fn close(&mut self, fd: usize) -> bool {
         // TODO
-        todo!()
+        // todo!()
+        // if fd > self.fd.len()-1 || self.fd[fd].is_none(){
+        //     return false;
+        // }
+        // else{
+        //     self.fd[fd] = None;
+        //     self.count -=1;
+        //     return true;
+        // }
+        // self.fd.iter().nth(n)
+        // if let Some((id,_)) = self.fd.iter().enumerate().find(|(id,item)|{
+        //     *id == fd && !item.is_none()
+        // }){
+        //     self.fd[id] = None;
+        //     self.count -=1;
+        //     return true;
+        // }
+        // else{
+        //     return false;
+        // }
+        if let Some(value) = self.fd.iter().nth(fd){
+            if value.is_none(){
+                return false;
+            }
+            else{
+                self.fd[fd] = None;
+                self.count -=1;
+                return true;
+            }
+        }
+        else{
+            return false;
+        }
     }
 
     /// Return the number of currently allocated fds (excluding closed ones)
     pub fn count(&self) -> usize {
         // TODO
-        todo!()
+        // todo!()
+        return self.count;
     }
 }
 
